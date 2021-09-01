@@ -1,5 +1,5 @@
 nginx主要功能一个是把打包后的vue文件放到服务器访问，一个是使用nginx的反向代理解决跨域问题。   
-1. 部署vue打包后的文件，重命名为hello文件夹，放到nginx的根目录，配置如下：
+### 1. 部署vue打包后的文件，重命名为hello文件夹，放到nginx的根目录，配置如下：
 #### hash路由配置
 ```
 server {
@@ -54,4 +54,33 @@ server {
     }
 ```
 这样即可正常访问。   
-以上都是
+以上是history模式配置在nginx子目录下的配置，如果是在根目录，则不需要配置vue.config.js的publicPath和创建路由的时候特殊配置base，nginx的type_files也是不需要的。   
+### 2. nginx反向代理解决跨域问题
+```
+upstream local_server{
+    server 127.0.0.1:8080;
+}
+upstream datashow_server{
+    server 192.168.1.121:8098; // 接口的远程服务器
+} 
+server {
+        listen       8888;
+        server_name  localhost;
+
+        location / {
+            proxy_pass http://local_server; // 访问localhost:8888实际访问的是本地起起来的项目127.0.0.1:8080
+	    proxy_set_header Host $host;
+
+        }
+
+        location /dev-api { // 遇到/dev-api开头的接口，转向192.168.1.121:8098服务器，从192.168.1.121:8098服务器向192.168.1.121:8098发送请求，从而解决跨域
+		proxy_pass http://datashow_server;
+		proxy_set_header Host $host;
+	}
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+```
