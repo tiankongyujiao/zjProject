@@ -1,5 +1,6 @@
 nginx主要功能一个是把打包后的vue文件放到服务器访问，一个是使用nginx的反向代理解决跨域问题。   
 1. 部署vue打包后的文件，重命名为hello文件夹，放到nginx的根目录，配置如下：
+#### hash路由配置
 ```
 server {
         listen       8888;
@@ -18,7 +19,7 @@ server {
 
 ```
 这种情况是vue的路由为hash，即带#的那种。    
-如果路由模式是history，需要特别处理一下：
+#### 如果路由模式是history，需要特别处理一下：
 (1) 第一是要把vue.config.js里面加个publicPath，改为'/hello/'
 ```
 const vueConfig = {
@@ -52,4 +53,5 @@ server {
         }
     }
 ```
-这样即可正常访问
+这样即可正常访问。   
+以上都是
