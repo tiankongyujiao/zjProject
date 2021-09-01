@@ -58,7 +58,7 @@ server {
 ### 2. nginx反向代理解决跨域问题
 ```
 upstream local_server{
-    server 127.0.0.1:8080;
+    server 127.0.0.1:8080; // npm run serve 起来的项目地址
 }
 upstream datashow_server{
     server 192.168.1.121:8098; // 接口的远程服务器
@@ -82,5 +82,5 @@ server {
         location = /50x.html {
             root   html;
         }
-    }
+}
 ```
