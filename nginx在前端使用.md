@@ -59,6 +59,7 @@ server {
 
 以上是history模式配置在nginx子目录下的配置，如果是在根目录，则不需要配置vue.config.js的publicPath和创建路由的时候特殊配置base，nginx的type_files也是不需要的。   
 ### 2. nginx反向代理解决跨域问题
+正向代理代理的是客户端，比如翻墙的时候；反向代理代理的是服务端，反向代理只是一种说法，因为代理客户端被称为正向代理，所以代理服务器被称为反向代理。
 ```
 upstream local_server{
     server 127.0.0.1:8080; // npm run serve 起来的项目地址
