@@ -24,7 +24,7 @@ server {
 (1) 第一是要把vue.config.js里面加个publicPath，改为'/hello/'
 ```
 const vueConfig = {
-    publicPath: '/zjtestvue/' // 这里
+    publicPath: '/hello/' // 这里
 }
 module.exports = vueConfig
 ```
@@ -32,7 +32,7 @@ module.exports = vueConfig
 ```
 const router = new VueRouter({
   mode: 'history',
-  base: '/zjtestvue/', // 这里
+  base: '/hello/', // 这里
   routes
 })
 ```
