@@ -1,15 +1,15 @@
 ### 前端鉴权cookie，session，token.md
 #### 1. cookie
-cookie是后端存放在前端的，前端请求接口时会自动带上cookie
+> cookie是后端存放在前端的，前端请求接口时会自动带上cookie
 #### 2. session
-session是基于cookie实现的，也是存储在cookie里面的，只不过存取的是一个标识，不是原始信息。    
+> session是基于cookie实现的，也是存储在cookie里面的，只不过存取的是一个标识，不是原始信息。    
 session的流程：
 1. 服务器在接受客户端首次访问时在服务器端创建seesion，然后保存seesion(我们可以将seesion保存在内存中，也可以保存在redis中，推荐使用后者)，然后给这个session生成一个唯一的标识字符串,然后在响应头中种下这个唯一标识字符串。
 2. 签名。这一步通过秘钥对sid进行签名处理，避免客户端修改sid。（非必需步骤）
 3. 浏览器中收到请求响应的时候会解析响应头，然后将sid保存在本地cookie中，浏览器在下次http请求的请求头中会带上该域名下的cookie信息，
 4. 服务器在接受客户端请求时会去解析请求头cookie中的sid，然后根据这个sid去找服务器端保存的该客户端的session，然后判断该请求是否合法。
 #### 3. token
-token的出现是因为cookie的局限性，①不是所有的终端都有cookie的，比如APP，②session的不足：服务端有状态（这个还不是很理解）    
+> token的出现是因为cookie的局限性，①不是所有的终端都有cookie的，比如APP，②session的不足：服务端有状态（这个还不是很理解）    
 token的流程：
  1. 客户端使用用户名跟密码请求登录   
  2. 服务端收到请求，去验证用户名与密码   
