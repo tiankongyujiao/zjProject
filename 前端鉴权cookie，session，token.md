@@ -2,8 +2,32 @@
 #### 1. cookie
 > cookie是后端存放在前端的，前端请求接口时会自动带上cookie
 #### 2. session
-> session是基于cookie实现的，也是存储在cookie里面的，只不过存取的是一个标识，不是原始信息。   
- 
+> session是基于cookie实现的，也是存储在cookie里面的，只不过存取的是一个标识，不是原始信息，session的具体消息是保存在服务端的，服务端存在本地或者redis中。 
+```
+const http = require('http')
+const session = {}
+http.createServer((req, res) => {
+    const sessionKey = 'sid'
+
+    if (req.url === '/favicon.ico') {
+        return
+    } else {
+        const cookie = req.headers.cookie
+        if (cookie && cookie.indexOf(sessionKey) > -1) {
+            res.end('Come Back')
+            const pattern = new RegExp(`${sessionKey}=([^;]+);?\s*`)
+            const sid = pattern.exec(cookie)[1]
+            console.log('session:', sid, session, session[sid])
+        } else {
+            const sid = (Math.random() * 9999999).toFixed()
+            res.setHeader('Set-Cookie', `${sessionKey}=${sid}`)
+            session[sid] = { name: 'laowang' } // 存储在本地
+            res.end('hello cookie')
+        }
+    }
+
+}).listen(3000)
+```
 session的流程：
 1. 服务器在接受客户端首次访问时在服务器端创建seesion，然后保存seesion(我们可以将seesion保存在内存中，也可以保存在redis中，推荐使用后者)，然后给这个session生成一个唯一的标识字符串,然后在响应头中种下这个唯一标识字符串。
 2. 签名。这一步通过秘钥对sid进行签名处理，避免客户端修改sid。（非必需步骤）
