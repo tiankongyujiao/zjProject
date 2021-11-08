@@ -17,6 +17,7 @@
 评论：<script>alert(1)</script>     
 跨站脚本注入：我来了<script src="http://localhost:4000/hack.js"></script>
 
-这种防范可以利用http请求头里面refer字段
-
-未完。
+**防范手段**：
++ ejs转义字符
++ 设置黑名单
++ httpOnly cookie（即cookie不能通过document.cookie的方式获取，只能浏览器请求后台时自动带在头部）
