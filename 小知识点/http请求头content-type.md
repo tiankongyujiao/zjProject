@@ -11,10 +11,10 @@ MIME媒体类型，http中使用content-type来表示媒体类型，使用conten
 以application开头的媒体格式如下：
 + application/json: JSON数据格式
 + application/x-www-form-urlencoded ：表单默认的提交数据的格式(设置在form表单提交的enctype参数中:只能指定application/x-www-form-urlencoded和multipart/form-data这两种类型,默认是application/x-www-form-urlencoded类型，浏览器会把表单中发送的数据编码为“key=value”对的形式,当向服务器发送大量的文本、包含非ASCII字符的文本或二进制数据时，例如上传文件时，选择multipart/form-data):
-`
+```
 <form action="" enctype="multipart/form-data"></form>
 <form action="" enctype="application/x-www-form-urlencoded"></form>
-`
+```
 + application/pdf: pdf格式 
 + application/msword: Word文档格式
 + application/octet-stream: 二进制流数据（如常见的文件下载）
@@ -37,7 +37,7 @@ post是需要带参数的，也就是data参数，客户端告诉服务端，自
 原文在返回时，在responseHeaders中设置Content-Type，其值为’text/html’：    
 > response.writeHead(200, {'Content-Type': 'text/html'});
 返回的是一个html页面，如果返回的值是‘text/plain’， 则返回的是：
-`
+```
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -51,7 +51,7 @@ post是需要带参数的，也就是data参数，客户端告诉服务端，自
   <body>
   </body>
 </html>
-`
+```
 
 因此Content-Typ作用是告知别人我的数据是什么格式的，可以是客户端告知服务端，可以是服务端告知客户端。  
 
