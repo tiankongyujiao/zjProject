@@ -1,0 +1,94 @@
+{
+  "main": {
+    "id": "97ec30ee9f719a52",
+    "type": "split",
+    "children": [
+      {
+        "id": "6a2fc71dca6038d9",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "算法图解笔记/第一章--算法简介.md",
+            "mode": "source"
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "93d9b09a0fe55fa1",
+    "type": "split",
+    "children": [
+      {
+        "id": "a3ed15c9d7e662e5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4f0a6322213c0b81",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "c0702933358d77a5",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "6b89c749ae788c2d",
+    "type": "split",
+    "children": [
+      {
+        "id": "c09342fc180848dd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9fb711761137364e",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "算法图解笔记/第一章--算法简介.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "6a2fc71dca6038d9",
+  "lastOpenFiles": [
+    "算法图解笔记/第一章--算法简介.md",
+    "算法图解笔记/第二章--选择排序.md"
+  ]
+}
