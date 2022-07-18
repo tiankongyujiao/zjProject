@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "语法.md",
+            "file": "源码学习/源码笔记/setup环境-集成jest做单元测试-集成ts.md",
             "mode": "source"
           }
         }
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "语法.md",
+                "file": "源码学习/源码笔记/setup环境-集成jest做单元测试-集成ts.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "语法.md"
+                "file": "源码学习/源码笔记/setup环境-集成jest做单元测试-集成ts.md"
               }
             }
           }
@@ -98,6 +98,8 @@
   },
   "active": "6a2fc71dca6038d9",
   "lastOpenFiles": [
+    "源码学习/源码笔记/setup环境-集成jest做单元测试-集成ts.md",
+    "源码学习/笔记.md",
     "语法.md",
     "README.md",
     "Markdown画图.md",
@@ -105,7 +107,6 @@
     "小知识点/把cdn的项目转换成可以import的.md",
     "算法图解笔记/第四章--快速排序.md",
     "算法图解笔记/第五章--散列表.md",
-    "算法图解笔记/第一章--算法简介.md",
-    "算法图解笔记/第二章--选择排序.md"
+    "算法图解笔记/第一章--算法简介.md"
   ]
 }

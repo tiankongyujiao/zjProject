@@ -1271,7 +1271,7 @@
 
 "@types/jest@^28.1.4":
   version "28.1.4"
-  resolved "https://registry.npmmirror.com/@types/jest/-/jest-28.1.4.tgz#a11ee6c8fd0b52c19c9c18138b78bbcc201dad5a"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-28.1.4.tgz#a11ee6c8fd0b52c19c9c18138b78bbcc201dad5a"
   integrity sha512-telv6G5N7zRJiLcI3Rs3o+ipZ28EnE+7EvF0pSrt2pZOMnAVI/f+6/LucDxOvcBcTeTL3JMF744BbVQAVBUQRA==
   dependencies:
     jest-matcher-utils "^28.0.0"
@@ -2315,7 +2315,7 @@ jest-worker@^28.1.1:
 
 jest@^28.1.2:
   version "28.1.2"
-  resolved "https://registry.npmmirror.com/jest/-/jest-28.1.2.tgz#451ff24081ce31ca00b07b60c61add13aa96f8eb"
+  resolved "https://registry.yarnpkg.com/jest/-/jest-28.1.2.tgz#451ff24081ce31ca00b07b60c61add13aa96f8eb"
   integrity sha512-Tuf05DwLeCh2cfWCQbcz9UxldoDyiR1E9Igaei5khjonKncYdc6LDfynKCEWozK0oLE3GD+xKAo2u8x/0s6GOg==
   dependencies:
     "@jest/core" "^28.1.2"
