@@ -1,39 +1,37 @@
-import { effect, stop } from '../effect';
-import { isReactive, reactive } from '../reactive'
+import { effect, stop } from "../effect";
+import { isReactive, reactive } from "../reactive";
 
-describe('effect', () => {
-    it('happy path', () => {
+describe("effect", () => {
+  it("happy path", () => {
+    const user = reactive({
+      age: 10,
+    });
+    let nextAge;
+    effect(() => {
+      nextAge = user.age + 1;
+    });
 
-        const user = reactive({
-            age: 10
-        })
-        let nextAge;
-        effect(() => {
-            nextAge = user.age + 1
-        })
+    expect(nextAge).toBe(11);
 
-        expect(nextAge).toBe(11)
+    // update
+    user.age++;
+    expect(nextAge).toBe(12);
+  });
 
-        // update
-        user.age++
-        expect(nextAge).toBe(12)
-    })
+  it("should return runner when call effect", () => {
+    let foo = 10;
+    const runner = effect(() => {
+      foo++;
+      return "foo";
+    });
+    expect(foo).toBe(11);
 
-    it('should return runner when call effect', () => {
-        let foo = 10
-        const runner = effect(() => {
-            foo++
-            return 'foo'
-        })
-        expect(foo).toBe(11)
+    const r = runner();
+    expect(foo).toBe(12);
+    expect(r).toBe("foo");
+  });
 
-        const r = runner()
-        expect(foo).toBe(12)
-        expect(r).toBe('foo')
-    })
-})
-
-it("stop", () => {
+  it("stop", () => {
     let dummy;
     const obj = reactive({ prop: 1 });
     const runner = effect(() => {
@@ -49,8 +47,9 @@ it("stop", () => {
     // stopped effect should still be manually callable
     runner();
     expect(dummy).toBe(3);
-});
-it("onStop", () => {
+  });
+
+  it("onStop", () => {
     const obj = reactive({
       foo: 1,
     });
@@ -67,4 +66,28 @@ it("onStop", () => {
 
     stop(runner);
     expect(onStop).toBeCalledTimes(1);
+  });
+
+  it("schedule", () => {
+    const user = reactive({ age: 1 });
+    let a = 1;
+    let yumy;
+    let run = effect(
+      () => {
+        yumy = user.age;
+      },
+      {
+        schedule: () => {
+          a++;
+        },
+      }
+    );
+    expect(yumy).toBe(1);
+
+    user.age++;
+    expect(yumy).toBe(1);
+    expect(a).toBe(2);
+    run();
+    expect(yumy).toBe(2);
+  });
 });
