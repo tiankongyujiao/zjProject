@@ -64,10 +64,11 @@ function render(vnode, container) {
     patch(vnode, container);
 }
 function patch(vnode, container) {
-    if (typeof vnode.type === "string") {
+    const { shapeFlag } = vnode;
+    if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
         processElement(vnode, container);
     }
-    else if (isObject(vnode.type)) {
+    else if (shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
         processComponent(vnode, container);
     }
 }
@@ -76,14 +77,22 @@ function processElement(vnode, container) {
 }
 function mountElement(vnode, container) {
     const el = (vnode.el = document.createElement(vnode.type));
-    const { children, props } = vnode;
+    const { children, props, shapeFlag } = vnode;
     for (const key in props) {
-        el.setAttribute(key, props[key]);
+        const val = props[key];
+        const isOn = (key) => /^on[A-Z]/.test(key);
+        if (isOn(key)) {
+            const event = key.slice(2).toLowerCase();
+            el.addEventListener(event, val);
+        }
+        else {
+            el.setAttribute(key, val);
+        }
     }
-    if (typeof children === "string") {
+    if (shapeFlag & 4 /* ShapeFlags.TEXT_CHILDREN */) {
         el.textContent = children;
     }
-    else if (Array.isArray(children)) {
+    else if (shapeFlag & 8 /* ShapeFlags.ARRAY_CHILDREN */) {
         mountChildren(vnode, el);
     }
     container.append(el);
@@ -109,12 +118,25 @@ function setupRenderEffect(instance, initialVNode, container) {
 }
 
 function createVnode(type, props, children) {
-    return {
+    const vnode = {
         type,
         props,
         children,
+        shapeFlag: getShapeFlag(type),
         el: null,
     };
+    if (typeof children === "string") {
+        vnode.shapeFlag |= 4 /* ShapeFlags.TEXT_CHILDREN */;
+    }
+    else if (Array.isArray(children)) {
+        vnode.shapeFlag |= 8 /* ShapeFlags.ARRAY_CHILDREN */;
+    }
+    return vnode;
+}
+function getShapeFlag(type) {
+    return typeof type === "string"
+        ? 1 /* ShapeFlags.ELEMENT */
+        : 2 /* ShapeFlags.STATEFUL_COMPONENT */;
 }
 
 function createApp(rootComponent) {
