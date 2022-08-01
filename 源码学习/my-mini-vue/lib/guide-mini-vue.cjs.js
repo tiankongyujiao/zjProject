@@ -3,17 +3,37 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 const isObject = (value) => {
-    return value !== null && typeof value === 'object';
+    return value !== null && typeof value === "object";
 };
+const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);
+
+const shallowReadonlyMap = new WeakMap();
+function shallowReadonly(target) {
+    return createReactiveObject(target, shallowReadonlyMap);
+}
+function createReactiveObject(raw, baseHandlers) {
+    if (!isObject(raw)) {
+        console.warn(`target ${raw} 必须是一个对象`);
+        return raw;
+    }
+    return new Proxy(raw, baseHandlers);
+}
+
+function initProps(instance, rawProps) {
+    instance.props = rawProps || {};
+}
 
 const publicPropertiesMap = {
     $el: (i) => i.vnode.el,
 };
 const PublicInstanceProxyHandlers = {
     get({ _: instance }, key) {
-        const { setupState } = instance;
-        if (key in setupState) {
+        const { setupState, props } = instance;
+        if (hasOwn(setupState, key)) {
             return setupState[key];
+        }
+        else if (hasOwn(props, key)) {
+            return props[key];
         }
         const publicGetter = publicPropertiesMap[key];
         if (publicGetter) {
@@ -27,11 +47,12 @@ function createComponentInstance(vnode) {
         vnode,
         type: vnode.type,
         setupState: {},
+        props: {},
     };
 }
 function setupComponent(instance) {
     // TODO
-    // initProps()
+    initProps(instance, instance.vnode.props);
     // initSlots()
     setupStatefulComponent(instance);
 }
@@ -40,7 +61,7 @@ function setupStatefulComponent(instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     const { setup } = Component;
     if (setup) {
-        const setupResult = setup();
+        const setupResult = setup(shallowReadonly(instance.props));
         handleSetupResult(instance, setupResult);
     }
 }
