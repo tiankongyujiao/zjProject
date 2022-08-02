@@ -2,6 +2,13 @@ const isObject = (value) => {
     return value !== null && typeof value === "object";
 };
 const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);
+const capitalize = (event) => event.charAt(0).toUpperCase() + event.slice(1);
+const camelize = (str) => {
+    return str.replace(/-(\w)/g, (_, c) => {
+        return c ? c.toUpperCase() : "";
+    });
+};
+const toHandlerKey = (str) => (str ? "on" + capitalize(str) : "");
 
 const shallowReadonlyMap = new WeakMap();
 function shallowReadonly(target) {
@@ -13,6 +20,13 @@ function createReactiveObject(raw, baseHandlers) {
         return raw;
     }
     return new Proxy(raw, baseHandlers);
+}
+
+function emit(instance, event, ...args) {
+    const { props } = instance;
+    const handlerName = toHandlerKey(camelize(event));
+    const handler = props[handlerName];
+    handler && handler(...args);
 }
 
 function initProps(instance, rawProps) {
@@ -39,12 +53,15 @@ const PublicInstanceProxyHandlers = {
 };
 
 function createComponentInstance(vnode) {
-    return {
+    const component = {
         vnode,
         type: vnode.type,
         setupState: {},
         props: {},
+        emit: () => { },
     };
+    component.emit = emit.bind(null, component);
+    return component;
 }
 function setupComponent(instance) {
     // TODO
@@ -57,7 +74,9 @@ function setupStatefulComponent(instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     const { setup } = Component;
     if (setup) {
-        const setupResult = setup(shallowReadonly(instance.props));
+        const setupResult = setup(shallowReadonly(instance.props), {
+            emit: instance.emit,
+        });
         handleSetupResult(instance, setupResult);
     }
 }
