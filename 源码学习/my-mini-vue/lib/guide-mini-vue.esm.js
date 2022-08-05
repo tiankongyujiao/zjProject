@@ -69,6 +69,7 @@ function normalizeSlotValue(value) {
     return Array.isArray(value) ? value : [value];
 }
 
+let currentInstance = null;
 function createComponentInstance(vnode) {
     const component = {
         vnode,
@@ -92,9 +93,11 @@ function setupStatefulComponent(instance) {
     instance.proxy = new Proxy({ _: instance }, PublicInstanceProxyHandlers);
     const { setup } = Component;
     if (setup) {
+        setCurrentInstance(instance);
         const setupResult = setup(shallowReadonly(instance.props), {
             emit: instance.emit,
         });
+        setCurrentInstance(null);
         handleSetupResult(instance, setupResult);
     }
 }
@@ -113,18 +116,73 @@ function finshSetupComponent(instance) {
         instance.render = Component.render;
     }
 }
+function setCurrentInstance(instance) {
+    currentInstance = instance;
+}
+function getCurrentInstance() {
+    return currentInstance;
+}
+
+const Fragment = Symbol("Fragment");
+const Text = Symbol("Text");
+function createVnode(type, props, children) {
+    const vnode = {
+        type,
+        props,
+        children,
+        shapeFlag: getShapeFlag(type),
+        el: null,
+    };
+    if (typeof children === "string") {
+        vnode.shapeFlag |= 4 /* ShapeFlags.TEXT_CHILDREN */;
+    }
+    else if (Array.isArray(children)) {
+        vnode.shapeFlag |= 8 /* ShapeFlags.ARRAY_CHILDREN */;
+    }
+    if (vnode.shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
+        if (isObject(children)) {
+            vnode.shapeFlag |= 16 /* ShapeFlags.SLOT_CHILDREN */;
+        }
+    }
+    return vnode;
+}
+function createTextVNode(text) {
+    return createVnode(Text, {}, text);
+}
+function getShapeFlag(type) {
+    return typeof type === "string"
+        ? 1 /* ShapeFlags.ELEMENT */
+        : 2 /* ShapeFlags.STATEFUL_COMPONENT */;
+}
 
 function render(vnode, container) {
     patch(vnode, container);
 }
 function patch(vnode, container) {
-    const { shapeFlag } = vnode;
-    if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
-        processElement(vnode, container);
+    const { type, shapeFlag } = vnode;
+    switch (type) {
+        case Fragment:
+            processFragment(vnode, container);
+            break;
+        case Text:
+            processText(vnode, container);
+            break;
+        default:
+            if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
+                processElement(vnode, container);
+            }
+            else if (shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
+                processComponent(vnode, container);
+            }
     }
-    else if (shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
-        processComponent(vnode, container);
-    }
+}
+function processText(vnode, container) {
+    const { children } = vnode;
+    const textNode = (vnode.$el = document.createTextNode(children));
+    container.append(textNode);
+}
+function processFragment(vnode, container) {
+    mountChildren(vnode, container);
 }
 function processElement(vnode, container) {
     mountElement(vnode, container);
@@ -171,33 +229,6 @@ function setupRenderEffect(instance, initialVNode, container) {
     initialVNode.el = subTree.el;
 }
 
-function createVnode(type, props, children) {
-    const vnode = {
-        type,
-        props,
-        children,
-        shapeFlag: getShapeFlag(type),
-        el: null,
-    };
-    if (typeof children === "string") {
-        vnode.shapeFlag |= 4 /* ShapeFlags.TEXT_CHILDREN */;
-    }
-    else if (Array.isArray(children)) {
-        vnode.shapeFlag |= 8 /* ShapeFlags.ARRAY_CHILDREN */;
-    }
-    if (vnode.shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
-        if (isObject(children)) {
-            vnode.shapeFlag |= 16 /* ShapeFlags.SLOT_CHILDREN */;
-        }
-    }
-    return vnode;
-}
-function getShapeFlag(type) {
-    return typeof type === "string"
-        ? 1 /* ShapeFlags.ELEMENT */
-        : 2 /* ShapeFlags.STATEFUL_COMPONENT */;
-}
-
 function createApp(rootComponent) {
     return {
         mount(rootContainer) {
@@ -215,9 +246,9 @@ function renderSlots(slots, name, props) {
     const slot = slots[name];
     if (slot) {
         if (typeof slot === "function") {
-            return createVnode("div", {}, slot(props));
+            return createVnode(Fragment, {}, slot(props));
         }
     }
 }
 
-export { createApp, h, renderSlots };
+export { createApp, createTextVNode, getCurrentInstance, h, renderSlots };

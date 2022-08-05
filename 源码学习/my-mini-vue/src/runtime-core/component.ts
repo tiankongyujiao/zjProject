@@ -5,6 +5,8 @@ import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { initSlots } from "./componentSlots";
 
+let currentInstance = null;
+
 export function createComponentInstance(vnode) {
   const component = {
     vnode,
@@ -35,10 +37,12 @@ function setupStatefulComponent(instance: any) {
   const { setup } = Component;
 
   if (setup) {
+    setCurrentInstance(instance);
     const setupResult = setup(shallowReadonly(instance.props), {
       emit: instance.emit,
     });
 
+    setCurrentInstance(null);
     handleSetupResult(instance, setupResult);
   }
 }
@@ -60,4 +64,12 @@ function finshSetupComponent(instance: any) {
   if (Component.render) {
     instance.render = Component.render;
   }
+}
+
+function setCurrentInstance(instance) {
+  currentInstance = instance;
+}
+
+export function getCurrentInstance() {
+  return currentInstance;
 }
