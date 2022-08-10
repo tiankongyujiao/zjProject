@@ -74,13 +74,15 @@ function normalizeSlotValue(value) {
 }
 
 let currentInstance = null;
-function createComponentInstance(vnode) {
+function createComponentInstance(vnode, parent) {
     const component = {
         vnode,
         type: vnode.type,
         setupState: {},
         props: {},
         slots: {},
+        provides: parent ? parent.provides : {},
+        parent,
         emit: () => { },
     };
     component.emit = emit.bind(null, component);
@@ -160,23 +162,23 @@ function getShapeFlag(type) {
 }
 
 function render(vnode, container) {
-    patch(vnode, container);
+    patch(vnode, container, null);
 }
-function patch(vnode, container) {
+function patch(vnode, container, parent) {
     const { type, shapeFlag } = vnode;
     switch (type) {
         case Fragment:
-            processFragment(vnode, container);
+            processFragment(vnode, container, parent);
             break;
         case Text:
             processText(vnode, container);
             break;
         default:
             if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
-                processElement(vnode, container);
+                processElement(vnode, container, parent);
             }
             else if (shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
-                processComponent(vnode, container);
+                processComponent(vnode, container, parent);
             }
     }
 }
@@ -185,13 +187,13 @@ function processText(vnode, container) {
     const textNode = (vnode.$el = document.createTextNode(children));
     container.append(textNode);
 }
-function processFragment(vnode, container) {
-    mountChildren(vnode, container);
+function processFragment(vnode, container, parent) {
+    mountChildren(vnode, container, parent);
 }
-function processElement(vnode, container) {
-    mountElement(vnode, container);
+function processElement(vnode, container, parent) {
+    mountElement(vnode, container, parent);
 }
-function mountElement(vnode, container) {
+function mountElement(vnode, container, parent) {
     const el = (vnode.el = document.createElement(vnode.type));
     const { children, props, shapeFlag } = vnode;
     for (const key in props) {
@@ -209,27 +211,27 @@ function mountElement(vnode, container) {
         el.textContent = children;
     }
     else if (shapeFlag & 8 /* ShapeFlags.ARRAY_CHILDREN */) {
-        mountChildren(vnode, el);
+        mountChildren(vnode, el, parent);
     }
     container.append(el);
 }
-function mountChildren(vnode, container) {
+function mountChildren(vnode, container, parent) {
     vnode.children.forEach((v) => {
-        patch(v, container);
+        patch(v, container, parent);
     });
 }
-function processComponent(vnode, container) {
-    mountComponent(vnode, container);
+function processComponent(vnode, container, parent) {
+    mountComponent(vnode, container, parent);
 }
-function mountComponent(initialVNode, container) {
-    const instance = createComponentInstance(initialVNode);
+function mountComponent(initialVNode, container, parent) {
+    const instance = createComponentInstance(initialVNode, parent);
     setupComponent(instance);
     setupRenderEffect(instance, initialVNode, container);
 }
 function setupRenderEffect(instance, initialVNode, container) {
     const { proxy } = instance;
     const subTree = instance.render.call(proxy);
-    patch(subTree, container);
+    patch(subTree, container, instance);
     initialVNode.el = subTree.el;
 }
 
@@ -255,8 +257,39 @@ function renderSlots(slots, name, props) {
     }
 }
 
+function provide(key, value) {
+    // 存
+    const currentInstance = getCurrentInstance();
+    if (currentInstance) {
+        let { provides, parent } = currentInstance;
+        const parentProvides = parent.provides;
+        if (provides === parentProvides) {
+            provides = currentInstance.provides = Object.create(parentProvides);
+        }
+        provides[key] = value;
+    }
+}
+function inject(key, defaultValue) {
+    // 取
+    const currentInstance = getCurrentInstance();
+    if (currentInstance) {
+        const parentProvides = currentInstance.parent.provides;
+        if (key in parentProvides) {
+            return parentProvides[key];
+        }
+        else if (defaultValue) {
+            if (typeof defaultValue === "function") {
+                return defaultValue();
+            }
+            return defaultValue;
+        }
+    }
+}
+
 exports.createApp = createApp;
 exports.createTextVNode = createTextVNode;
 exports.getCurrentInstance = getCurrentInstance;
 exports.h = h;
+exports.inject = inject;
+exports.provide = provide;
 exports.renderSlots = renderSlots;
