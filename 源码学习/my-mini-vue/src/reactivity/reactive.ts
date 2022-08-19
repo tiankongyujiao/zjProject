@@ -24,11 +24,7 @@ export function readonly(raw) {
 }
 
 export function shallowReadonly(target) {
-  return createReactiveObject(
-    target,
-    shallowReadonlyMap,
-    shallowReadonlyHandlers
-  );
+  return createReactiveObject(target, shallowReadonlyHandlers);
 }
 
 export function isReadonly(value) {

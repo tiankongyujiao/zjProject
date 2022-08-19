@@ -1,5 +1,9 @@
+const extend = Object.assign;
 const isObject = (value) => {
     return value !== null && typeof value === "object";
+};
+const hasChanged = (val, newVal) => {
+    return !Object.is(val, newVal);
 };
 const hasOwn = (val, key) => Object.prototype.hasOwnProperty.call(val, key);
 const capitalize = (event) => event.charAt(0).toUpperCase() + event.slice(1);
@@ -10,9 +14,148 @@ const camelize = (str) => {
 };
 const toHandlerKey = (str) => (str ? "on" + capitalize(str) : "");
 
-const shallowReadonlyMap = new WeakMap();
+let activeEffect;
+let shouldTrack;
+class ReactiveEffect {
+    constructor(fn, schedule) {
+        this.deps = [];
+        this.active = true;
+        this._fn = fn;
+        this.schedule = schedule;
+    }
+    run() {
+        if (!this.active) {
+            return this._fn();
+        }
+        shouldTrack = true;
+        activeEffect = this;
+        const result = this._fn();
+        shouldTrack = false;
+        return result;
+    }
+    stop() {
+        if (this.active) {
+            clearupEffect(this);
+            if (this.onStop) {
+                this.onStop();
+            }
+            this.active = false;
+        }
+    }
+}
+function clearupEffect(effect) {
+    effect.deps.forEach((dep) => {
+        dep.delete(effect);
+    });
+    effect.deps.length = 0;
+}
+const targetMap = new Map();
+function track(target, key) {
+    if (!isTracking())
+        return;
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+        depsMap = new Map();
+        targetMap.set(target, depsMap);
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+        dep = new Set();
+        depsMap.set(key, dep);
+    }
+    trackEffects(dep);
+}
+function isTracking() {
+    return activeEffect !== undefined && shouldTrack;
+}
+function trackEffects(dep) {
+    dep.add(activeEffect);
+    activeEffect.deps.push(dep);
+}
+function trigger(target, key) {
+    let depsMap = targetMap.get(target);
+    let dep = depsMap.get(key);
+    triggerEffects(dep);
+}
+function triggerEffects(dep) {
+    dep.forEach((effect) => {
+        if (effect.schedule) {
+            effect.schedule();
+        }
+        else {
+            effect.run();
+        }
+    });
+}
+function effect(fn, options = {}) {
+    const _effect = new ReactiveEffect(fn);
+    extend(_effect, options);
+    _effect.run();
+    const runner = _effect.run.bind(_effect);
+    runner.effect = _effect;
+    return runner;
+}
+
+const get = createGetter();
+const set = createSetter();
+const readonlyGet = createGetter(true);
+const shallowReadonlyGet = createGetter(true, true);
+function createGetter(isReadonly = false, shallow = false) {
+    return function get(target, key) {
+        const res = Reflect.get(target, key);
+        if (key === "__v_isReactive" /* ReactiveFlags.IS_REACTIVE */) {
+            return !isReadonly;
+        }
+        else if (key === "__v_isReadonly" /* ReactiveFlags.IS_READONLY */) {
+            return isReadonly;
+        }
+        if (isObject(res)) {
+            return isReadonly ? readonly(res) : reactive(res);
+        }
+        if (!isReadonly) {
+            track(target, key);
+        }
+        if (shallow) {
+            return res;
+        }
+        return res;
+    };
+}
+function createSetter() {
+    return function set(target, key, value) {
+        const res = Reflect.set(target, key, value);
+        trigger(target, key);
+        return res;
+    };
+}
+const mutableHandlers = {
+    get,
+    set,
+};
+const readonlyHandlers = {
+    get: readonlyGet,
+    set(target, key) {
+        console.warn(`key :"${String(key)}" set 失败，因为 target 是 readonly 类型`, target);
+        return true;
+    },
+};
+const shallowReadonlyHandlers = {
+    get: shallowReadonlyGet,
+    set(target, key) {
+        // readonly 的响应式对象不可以修改值
+        console.warn(`Set operation on key "${String(key)}" failed: target is readonly.`, target);
+        return true;
+    },
+};
+
+function reactive(raw) {
+    return createReactiveObject(raw, mutableHandlers);
+}
+function readonly(raw) {
+    return createReactiveObject(raw, readonlyHandlers);
+}
 function shallowReadonly(target) {
-    return createReactiveObject(target, shallowReadonlyMap);
+    return createReactiveObject(target, shallowReadonlyHandlers);
 }
 function createReactiveObject(raw, baseHandlers) {
     if (!isObject(raw)) {
@@ -20,6 +163,59 @@ function createReactiveObject(raw, baseHandlers) {
         return raw;
     }
     return new Proxy(raw, baseHandlers);
+}
+
+class refImpl {
+    constructor(value) {
+        this.__is_ref = true;
+        this._rawValue = value;
+        this._value = convert(value);
+        this.dep = new Set();
+    }
+    get value() {
+        trackRefValue(this);
+        return this._value;
+    }
+    set value(newVal) {
+        if (hasChanged(this._rawValue, newVal)) {
+            this._rawValue = newVal;
+            this._value = convert(newVal);
+            triggerEffects(this.dep);
+        }
+    }
+}
+function convert(value) {
+    return isObject(value) ? reactive(value) : value;
+}
+function trackRefValue(ref) {
+    if (isTracking()) {
+        trackEffects(ref.dep);
+    }
+}
+function ref(value) {
+    return new refImpl(value);
+}
+function isRef(value) {
+    return !!value.__is_ref;
+}
+function unRef(ref) {
+    return isRef(ref) ? ref.value : ref;
+}
+function proxyRefs(objectWidthRefs) {
+    return new Proxy(objectWidthRefs, {
+        get(target, key) {
+            return unRef(Reflect.get(target, key));
+        },
+        set(target, key, value) {
+            if (isRef(target[key]) && !isRef(value)) {
+                return (target[key].value = value);
+            }
+            else {
+                return Reflect.set(target, key, value);
+                // return (target[key] = value);
+            }
+        },
+    });
 }
 
 function emit(instance, event, ...args) {
@@ -79,6 +275,8 @@ function createComponentInstance(vnode, parent) {
         slots: {},
         provides: parent ? parent.provides : {},
         parent,
+        isMounted: false,
+        subTree: {},
         emit: () => { },
     };
     component.emit = emit.bind(null, component);
@@ -108,11 +306,11 @@ function handleSetupResult(instance, setupResult) {
     // TODO function
     // object
     if (isObject(setupResult)) {
-        instance.setupState = setupResult;
+        instance.setupState = proxyRefs(setupResult);
     }
-    finshSetupComponent(instance);
+    finishSetupComponent(instance);
 }
-function finshSetupComponent(instance) {
+function finishSetupComponent(instance) {
     const Component = instance.type;
     if (Component.render) {
         instance.render = Component.render;
@@ -168,62 +366,119 @@ function createAppApi(render) {
     };
 }
 
+const EMPTY_OBJ = {};
 function createRenderer(options) {
-    const { createElement, patchProp, insert } = options;
+    const { createElement: hostCreateElement, patchProp: hostPatchProp, insert: hostInsert, remove: hostRemove, setElementText: hostSetElementText, } = options;
     function render(vnode, container) {
-        patch(vnode, container, null);
+        patch(null, vnode, container, null);
     }
-    function patch(vnode, container, parent) {
-        const { type, shapeFlag } = vnode;
+    function patch(n1, n2, container, parent) {
+        const { type, shapeFlag } = n2;
         switch (type) {
             case Fragment:
-                processFragment(vnode, container, parent);
+                processFragment(n1, n2, container, parent);
                 break;
             case Text:
-                processText(vnode, container);
+                processText(n1, n2, container);
                 break;
             default:
                 if (shapeFlag & 1 /* ShapeFlags.ELEMENT */) {
-                    processElement(vnode, container, parent);
+                    processElement(n1, n2, container, parent);
                 }
                 else if (shapeFlag & 2 /* ShapeFlags.STATEFUL_COMPONENT */) {
-                    processComponent(vnode, container, parent);
+                    processComponent(n1, n2, container, parent);
                 }
         }
     }
-    function processText(vnode, container) {
-        const { children } = vnode;
-        const textNode = (vnode.$el = document.createTextNode(children));
+    function processText(n1, n2, container) {
+        const { children } = n2;
+        const textNode = (n2.$el = document.createTextNode(children));
         container.append(textNode);
     }
-    function processFragment(vnode, container, parent) {
-        mountChildren(vnode, container, parent);
+    function processFragment(n1, n2, container, parent) {
+        mountChildren(n2.children, container, parent);
     }
-    function processElement(vnode, container, parent) {
-        mountElement(vnode, container, parent);
+    function processElement(n1, n2, container, parent) {
+        if (!n1) {
+            mountElement(n2, container, parent);
+        }
+        else {
+            patchElement(n1, n2, container, parent);
+        }
+    }
+    function patchElement(n1, n2, container, parentComponent) {
+        console.log("patchElement");
+        console.log("n1", n1);
+        console.log("n2", n2);
+        const oldProps = n1.props || EMPTY_OBJ;
+        const newProps = n2.props || EMPTY_OBJ;
+        const el = (n2.el = n1.el);
+        patchChildren(n1, n2, el, parentComponent);
+        patchProps(el, oldProps, newProps);
+    }
+    function patchChildren(n1, n2, container, parentComponent) {
+        const oldShapeFlag = n1.shapeFlag;
+        const c1 = n1.children;
+        const { shapeFlag } = n2;
+        const c2 = n2.children;
+        if (shapeFlag & 4 /* ShapeFlags.TEXT_CHILDREN */) {
+            if (oldShapeFlag & 8 /* ShapeFlags.ARRAY_CHILDREN */) {
+                unmountChildren(c1);
+            }
+            if (c1 !== c2) {
+                hostSetElementText(container, c2);
+            }
+        }
+        else {
+            if (oldShapeFlag & 4 /* ShapeFlags.TEXT_CHILDREN */) {
+                hostSetElementText(container, "");
+                mountChildren(c2, container, parentComponent);
+            }
+        }
+    }
+    function unmountChildren(children) {
+        for (let i = 0; i < children.length; i++) {
+            hostRemove(children[i].el);
+        }
+    }
+    function patchProps(el, oldProps, newProps) {
+        if (oldProps !== newProps) {
+            for (let key in newProps) {
+                const oldProp = oldProps[key];
+                const newProp = newProps[key];
+                patchProp(el, key, oldProp, newProp);
+            }
+            if (oldProps !== EMPTY_OBJ) {
+                for (let key in oldProps) {
+                    if (!(key in newProps)) {
+                        patchProp(el, key, oldProps[key], null);
+                    }
+                }
+            }
+        }
     }
     function mountElement(vnode, container, parent) {
-        const el = (vnode.el = createElement(vnode.type));
+        const el = (vnode.el = hostCreateElement(vnode.type));
         const { children, props, shapeFlag } = vnode;
         for (const key in props) {
             const val = props[key];
-            patchProp(el, key, val);
+            hostPatchProp(el, key, null, val);
         }
         if (shapeFlag & 4 /* ShapeFlags.TEXT_CHILDREN */) {
             el.textContent = children;
         }
         else if (shapeFlag & 8 /* ShapeFlags.ARRAY_CHILDREN */) {
-            mountChildren(vnode, el, parent);
+            mountChildren(vnode.children, el, parent);
         }
-        insert(el, container);
+        hostInsert(el, container);
     }
-    function mountChildren(vnode, container, parent) {
-        vnode.children.forEach((v) => {
-            patch(v, container, parent);
+    function mountChildren(children, container, parent) {
+        children.forEach((v) => {
+            patch(null, v, container, parent);
         });
     }
-    function processComponent(vnode, container, parent) {
-        mountComponent(vnode, container, parent);
+    function processComponent(n1, n2, container, parent) {
+        mountComponent(n2, container, parent);
     }
     function mountComponent(initialVNode, container, parent) {
         const instance = createComponentInstance(initialVNode, parent);
@@ -231,13 +486,27 @@ function createRenderer(options) {
         setupRenderEffect(instance, initialVNode, container);
     }
     function setupRenderEffect(instance, initialVNode, container) {
-        const { proxy } = instance;
-        const subTree = instance.render.call(proxy);
-        patch(subTree, container, instance);
-        initialVNode.el = subTree.el;
+        effect(() => {
+            if (!instance.isMounted) {
+                console.log("init");
+                const { proxy } = instance;
+                const subTree = (instance.subTree = instance.render.call(proxy));
+                patch(null, subTree, container, instance);
+                initialVNode.el = subTree.el;
+                instance.isMounted = true;
+            }
+            else {
+                console.log("update");
+                const { proxy } = instance;
+                const subTree = instance.render.call(proxy);
+                const prevSubTree = instance.subTree;
+                instance.subTree = subTree;
+                patch(prevSubTree, subTree, container, instance);
+            }
+        });
     }
     return {
-        createApp: createAppApi(render)
+        createApp: createAppApi(render),
     };
 }
 
@@ -286,26 +555,42 @@ function inject(key, defaultValue) {
 function createElement(type) {
     return document.createElement(type);
 }
-function patchProp(el, key, val) {
+function patchProp(el, key, oldVal, newVal) {
     const isOn = (key) => /^on[A-Z]/.test(key);
     if (isOn(key)) {
         const event = key.slice(2).toLowerCase();
-        el.addEventListener(event, val);
+        el.addEventListener(event, newVal);
     }
     else {
-        el.setAttribute(key, val);
+        if (newVal === undefined || newVal === null) {
+            el.removeAttribute(key);
+        }
+        else {
+            el.setAttribute(key, newVal);
+        }
     }
 }
 function insert(el, parent) {
     parent.append(el);
 }
+function remove(child) {
+    const parent = child.parentNode;
+    if (parent) {
+        parent.removeChild(child);
+    }
+}
+function setElementText(el, text) {
+    el.textContent = text;
+}
 let renderer = createRenderer({
     createElement,
     patchProp,
-    insert
+    insert,
+    remove,
+    setElementText,
 });
 function createApp(...args) {
     return renderer.createApp(...args);
 }
 
-export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, renderSlots, renderer };
+export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots, renderer };
