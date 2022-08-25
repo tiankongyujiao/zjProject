@@ -519,7 +519,49 @@ function createRenderer(options) {
                 i++;
             }
         }
-        else ;
+        else {
+            debugger;
+            let s1 = i;
+            let s2 = i;
+            const s2Len = e2 - s2 + 1;
+            let patched = 0;
+            // 中间部分新节点的索引映射表
+            const keyToNewIndexMap = new Map();
+            for (let i = s2; i <= e2; i++) {
+                keyToNewIndexMap.set(c2[i].key, i);
+            }
+            for (let i = s1; i <= e1; i++) {
+                const preChild = c1[i];
+                // 如果已经patch的老节点比中间的新节点要多，说明其余都是有删除的（优化的点）
+                if (patched >= s2Len) {
+                    hostRemove(preChild.el);
+                }
+                else {
+                    let newIndex;
+                    // 如果老的有key，则通过key去拿在新节点里面的key
+                    if (preChild.key) {
+                        newIndex = keyToNewIndexMap.get(preChild.key);
+                    }
+                    else {
+                        for (let j = s2; j <= e2; j++) {
+                            if (isSameVNodeType(preChild, c2[j])) {
+                                newIndex = j;
+                                break;
+                            }
+                        }
+                    }
+                    // newIndex存在，说明在新节点里面有，不用删除，patch
+                    if (newIndex !== undefined) {
+                        patch(preChild, c2[newIndex], container, parentComponent, null);
+                        patched++;
+                    }
+                    else {
+                        // 在新节点没有，直接删掉
+                        hostRemove(preChild.el);
+                    }
+                }
+            }
+        }
     }
     function unmountChildren(children) {
         for (let i = 0; i < children.length; i++) {
