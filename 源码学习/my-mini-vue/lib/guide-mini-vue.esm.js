@@ -408,9 +408,6 @@ function createRenderer(options) {
         }
     }
     function patchElement(n1, n2, container, parentComponent, anchor) {
-        console.log("patchElement");
-        console.log("n1", n1);
-        console.log("n2", n2);
         const oldProps = n1.props || EMPTY_OBJ;
         const newProps = n2.props || EMPTY_OBJ;
         const el = (n2.el = n1.el);
@@ -516,11 +513,16 @@ function createRenderer(options) {
             }
         }
         else {
-            debugger;
+            // 中间对比
             let s1 = i;
             let s2 = i;
-            const s2Len = e2 - s2 + 1;
+            const toBePatched = e2 - s2 + 1;
             let patched = 0;
+            let moved = false;
+            let maxNewIndexSoFar = 0;
+            const newIndexToOldIndexMap = new Array(toBePatched);
+            for (let i = 0; i < toBePatched; i++)
+                newIndexToOldIndexMap[i] = 0;
             // 中间部分新节点的索引映射表
             const keyToNewIndexMap = new Map();
             for (let i = s2; i <= e2; i++) {
@@ -529,7 +531,7 @@ function createRenderer(options) {
             for (let i = s1; i <= e1; i++) {
                 const preChild = c1[i];
                 // 如果已经patch的老节点比中间的新节点要多，说明其余都是有删除的（优化的点）
-                if (patched >= s2Len) {
+                if (patched >= toBePatched) {
                     hostRemove(preChild.el);
                 }
                 else {
@@ -548,12 +550,44 @@ function createRenderer(options) {
                     }
                     // newIndex存在，说明在新节点里面有，不用删除，patch
                     if (newIndex !== undefined) {
+                        // console.log(c2[newIndex], 123);
+                        if (newIndex > maxNewIndexSoFar) {
+                            maxNewIndexSoFar = newIndex;
+                        }
+                        else {
+                            moved = true;
+                        }
+                        newIndexToOldIndexMap[newIndex - s2] = i + 1;
                         patch(preChild, c2[newIndex], container, parentComponent, null);
                         patched++;
                     }
                     else {
                         // 在新节点没有，直接删掉
                         hostRemove(preChild.el);
+                    }
+                }
+            }
+            const increasingNewIndexSequence = moved
+                ? getSequence(newIndexToOldIndexMap)
+                : [];
+            let j = increasingNewIndexSequence.length - 1;
+            for (let i = toBePatched - 1; i >= 0; i--) {
+                const nextIndex = i + s2;
+                const nextChild = c2[nextIndex];
+                const anchor = nextIndex + 1 < l2 ? c2[nextIndex + 1].el : null;
+                // 如果newIndexToOldIndexMap[i]为0，说明在老的里面不存在，直接插入
+                if (newIndexToOldIndexMap[i] === 0) {
+                    patch(null, nextChild, container, parentComponent, anchor);
+                }
+                else if (moved) {
+                    // 如果新的元素已经没了，或者索引不相同，则执行hostInsert移动
+                    if (j < 0 || j !== increasingNewIndexSequence[i]) {
+                        // console.log(c2[nextIndex], 234);
+                        hostInsert(nextChild.el, container, anchor);
+                    }
+                    else {
+                        // 否则不变
+                        j--;
                     }
                 }
             }
@@ -631,6 +665,47 @@ function createRenderer(options) {
     return {
         createApp: createAppApi(render),
     };
+}
+function getSequence(arr) {
+    const p = arr.slice();
+    const result = [0];
+    let i, j, u, v, c;
+    const len = arr.length;
+    for (i = 0; i < len; i++) {
+        const arrI = arr[i];
+        if (arrI !== 0) {
+            j = result[result.length - 1];
+            if (arr[j] < arrI) {
+                p[i] = j;
+                result.push(i);
+                continue;
+            }
+            u = 0;
+            v = result.length - 1;
+            while (u < v) {
+                c = (u + v) >> 1;
+                if (arr[result[c]] < arrI) {
+                    u = c + 1;
+                }
+                else {
+                    v = c;
+                }
+            }
+            if (arrI < arr[result[u]]) {
+                if (u > 0) {
+                    p[i] = result[u - 1];
+                }
+                result[u] = i;
+            }
+        }
+    }
+    u = result.length;
+    v = result[u - 1];
+    while (u-- > 0) {
+        result[u] = v;
+        v = p[v];
+    }
+    return result;
 }
 
 function h(vnode, props, children) {
