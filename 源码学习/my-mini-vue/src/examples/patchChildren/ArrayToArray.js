@@ -160,6 +160,7 @@ import { ref, h } from "../../../lib/guide-mini-vue.esm.js";
 // 综合例子
 // a,b,(c,d,e,z),f,g
 // a,b,(d,c,y,e),f,g
+// [1,0,3,2]
 
 const prevChildren = [
   h("p", { key: "A" }, "A"),

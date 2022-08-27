@@ -205,7 +205,7 @@ export function createRenderer(options) {
           }
           // newIndex存在，说明在新节点里面有，不用删除，patch
           if (newIndex !== undefined) {
-            // console.log(c2[newIndex], 123);
+            console.log(c2[newIndex], "patch");
             if (newIndex > maxNewIndexSoFar) {
               maxNewIndexSoFar = newIndex;
             } else {
@@ -220,12 +220,10 @@ export function createRenderer(options) {
           }
         }
       }
-
       const increasingNewIndexSequence = moved
         ? getSequence(newIndexToOldIndexMap)
         : [];
       let j = increasingNewIndexSequence.length - 1;
-
       for (let i = toBePatched - 1; i >= 0; i--) {
         const nextIndex = i + s2;
         const nextChild = c2[nextIndex];
@@ -235,8 +233,8 @@ export function createRenderer(options) {
           patch(null, nextChild, container, parentComponent, anchor);
         } else if (moved) {
           // 如果新的元素已经没了，或者索引不相同，则执行hostInsert移动
-          if (j < 0 || j !== increasingNewIndexSequence[i]) {
-            // console.log(c2[nextIndex], 234);
+          if (j < 0 || i !== increasingNewIndexSequence[j]) {
+            console.log(c2[nextIndex], "hostInsert");
             hostInsert(nextChild.el, container, anchor);
           } else {
             // 否则不变
