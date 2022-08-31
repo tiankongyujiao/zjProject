@@ -232,6 +232,7 @@ function initProps(instance, rawProps) {
 const publicPropertiesMap = {
     $el: (i) => i.vnode.el,
     $slots: (i) => i.slots,
+    $props: (i) => i.props,
 };
 const PublicInstanceProxyHandlers = {
     get({ _: instance }, key) {
@@ -323,6 +324,17 @@ function getCurrentInstance() {
     return currentInstance;
 }
 
+function shouldUpdateComponent(prevVNode, nextVNode) {
+    const { props: preProps } = prevVNode;
+    const { props: nextProps } = nextVNode;
+    for (let key in nextProps) {
+        if (nextProps[key] !== preProps[key]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const Fragment = Symbol("Fragment");
 const Text = Symbol("Text");
 function createVnode(type, props, children) {
@@ -330,6 +342,7 @@ function createVnode(type, props, children) {
         type,
         props,
         children,
+        component: null,
         key: props && props.key,
         shapeFlag: getShapeFlag(type),
         el: null,
@@ -635,15 +648,31 @@ function createRenderer(options) {
         });
     }
     function processComponent(n1, n2, container, parent, anchor) {
-        mountComponent(n2, container, parent, anchor);
+        if (!n1) {
+            mountComponent(n2, container, parent, anchor);
+        }
+        else {
+            updateComponent(n1, n2);
+        }
+    }
+    function updateComponent(n1, n2) {
+        const instance = (n2.component = n1.component);
+        if (shouldUpdateComponent(n1, n2)) {
+            instance.next = n2;
+            instance.update();
+        }
+        else {
+            n2.el = n1.el;
+            instance.vnode = n2;
+        }
     }
     function mountComponent(initialVNode, container, parent, anchor) {
-        const instance = createComponentInstance(initialVNode, parent);
+        const instance = (initialVNode.component = createComponentInstance(initialVNode, parent));
         setupComponent(instance);
         setupRenderEffect(instance, initialVNode, container, anchor);
     }
     function setupRenderEffect(instance, initialVNode, container, anchor) {
-        effect(() => {
+        instance.update = effect(() => {
             if (!instance.isMounted) {
                 console.log("init");
                 const { proxy } = instance;
@@ -654,6 +683,11 @@ function createRenderer(options) {
             }
             else {
                 console.log("update");
+                const { next, vnode } = instance;
+                if (next) {
+                    next.el = vnode.el;
+                    updateComponentPreRender(instance, next);
+                }
                 const { proxy } = instance;
                 const subTree = instance.render.call(proxy);
                 const prevSubTree = instance.subTree;
@@ -665,6 +699,11 @@ function createRenderer(options) {
     return {
         createApp: createAppApi(render),
     };
+}
+function updateComponentPreRender(instance, nextVNode) {
+    instance.vnode = nextVNode;
+    instance.next = null;
+    instance.props = nextVNode.props;
 }
 function getSequence(arr) {
     const p = arr.slice();
