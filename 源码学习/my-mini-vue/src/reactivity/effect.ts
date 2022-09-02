@@ -8,10 +8,10 @@ export class ReactiveEffect {
   deps = [];
   active = true;
   onStop?: () => void;
-  public schedule: Function | undefined;
-  constructor(fn, schedule?: Function) {
+  public scheduler: Function | undefined;
+  constructor(fn, scheduler?: Function) {
     this._fn = fn;
-    this.schedule = schedule;
+    this.scheduler = scheduler;
   }
   run() {
     if (!this.active) {
@@ -74,8 +74,8 @@ export function trigger(target, key) {
 }
 export function triggerEffects(dep) {
   dep.forEach((effect) => {
-    if (effect.schedule) {
-      effect.schedule();
+    if (effect.scheduler) {
+      effect.scheduler();
     } else {
       effect.run();
     }

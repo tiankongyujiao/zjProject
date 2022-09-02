@@ -17,11 +17,11 @@ const toHandlerKey = (str) => (str ? "on" + capitalize(str) : "");
 let activeEffect;
 let shouldTrack;
 class ReactiveEffect {
-    constructor(fn, schedule) {
+    constructor(fn, scheduler) {
         this.deps = [];
         this.active = true;
         this._fn = fn;
-        this.schedule = schedule;
+        this.scheduler = scheduler;
     }
     run() {
         if (!this.active) {
@@ -79,8 +79,8 @@ function trigger(target, key) {
 }
 function triggerEffects(dep) {
     dep.forEach((effect) => {
-        if (effect.schedule) {
-            effect.schedule();
+        if (effect.scheduler) {
+            effect.scheduler();
         }
         else {
             effect.run();
@@ -378,6 +378,32 @@ function createAppApi(render) {
             },
         };
     };
+}
+
+const p = Promise.resolve();
+const queue = [];
+let isFlushPending = false;
+function nextTick(fn) {
+    return fn ? p.then(fn) : p;
+}
+function queueJobs(job) {
+    if (!queue.includes(job)) {
+        queue.push(job);
+    }
+    queueFlush();
+}
+function queueFlush() {
+    if (isFlushPending)
+        return true;
+    isFlushPending = true;
+    nextTick(flushJobs);
+}
+function flushJobs() {
+    isFlushPending = false;
+    let job;
+    while ((job = queue.shift())) {
+        job && job();
+    }
 }
 
 const EMPTY_OBJ = {};
@@ -694,6 +720,10 @@ function createRenderer(options) {
                 instance.subTree = subTree;
                 patch(prevSubTree, subTree, container, instance, anchor);
             }
+        }, {
+            scheduler() {
+                queueJobs(instance.update);
+            },
         });
     }
     return {
@@ -830,4 +860,4 @@ function createApp(...args) {
     return renderer.createApp(...args);
 }
 
-export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, patchProp, provide, proxyRefs, ref, renderSlots, renderer };
+export { createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, renderSlots, renderer };
