@@ -61,7 +61,6 @@ function parseTag(context, type) {
   advanceBy(context, match[0].length);
   advanceBy(context, 1);
 
-  console.log(context.source, "aaaaaaaaaaaaaaaaaa");
   if (type === TagType.End) return;
 
   return {
