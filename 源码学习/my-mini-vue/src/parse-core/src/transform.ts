@@ -10,7 +10,7 @@ function createTransformContext(root, options) {
   };
   return context;
 }
-
+// 转换节点
 function traverseNode(node, context) {
   const nodeTransforms = context.nodeTransforms;
   for (let i = 0; i < nodeTransforms.length; i++) {
@@ -18,7 +18,7 @@ function traverseNode(node, context) {
   }
   traverseChildren(node, context);
 }
-
+// 处理children
 function traverseChildren(node, context) {
   const children = node.children;
   if (children) {
