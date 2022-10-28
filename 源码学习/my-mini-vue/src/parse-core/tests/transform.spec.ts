@@ -6,6 +6,7 @@ describe("transform", () => {
   it("happy path", () => {
     const ast = baseParse("<div>hi,{{message}}</div>");
 
+    // 通过plugin的方式传入要查找替换的元素
     const plugin = (node) => {
       if (node.type === NodeTypes.TEXT) {
         node.content = node.content + " mini-vue";
