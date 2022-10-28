@@ -2,7 +2,7 @@ export function transform(root: any, options) {
   const context = createTransformContext(root, options);
   traverseNode(root, context);
 }
-
+// 生成上下文
 function createTransformContext(root, options) {
   const context = {
     root,
