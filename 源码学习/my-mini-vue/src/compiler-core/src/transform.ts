@@ -1,6 +1,11 @@
-export function transform(root: any, options) {
+export function transform(root: any, options = {}) {
   const context = createTransformContext(root, options);
   traverseNode(root, context);
+  createRootCodegen(root);
+}
+
+function createRootCodegen(root) {
+  root.codegenNode = root.children[0];
 }
 // 生成上下文
 function createTransformContext(root, options) {

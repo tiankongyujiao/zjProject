@@ -1,5 +1,5 @@
-import { NodeTypes } from "../src/ast";
-import { baseParse } from "../src/parse";
+import { NodeTypes } from "../../parse-core/src/ast";
+import { baseParse } from "../../parse-core/src/parse";
 import { transform } from "../src/transform";
 
 describe("transform", () => {
