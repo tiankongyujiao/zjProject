@@ -28,7 +28,8 @@ function createTransformContext(root, options) {
 function traverseNode(node, context) {
   const nodeTransforms = context.nodeTransforms;
   for (let i = 0; i < nodeTransforms.length; i++) {
-    nodeTransforms[i](node);
+    const transform = nodeTransforms[i];
+    transform(node, context);
   }
   switch (node.type) {
     case NodeTypes.INTERPOLATION:

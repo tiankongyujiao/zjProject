@@ -1,5 +1,9 @@
 import { NodeTypes } from "../../parse-core/src/ast";
-import { TO_DISPLAY_STRING, helperMapName } from "./runtimeHelpers";
+import {
+  TO_DISPLAY_STRING,
+  helperMapName,
+  CREATE_ELEMENT_BLOCK,
+} from "./runtimeHelpers";
 
 export function generate(ast) {
   const context = createCodegenContext();
@@ -46,9 +50,18 @@ function genNode(node: any, context) {
     case NodeTypes.SIMPLE_EXPRESSION:
       genExpression(node, context);
       break;
+    case NodeTypes.ELEMENT:
+      genElement(node, context);
+      break;
     default:
       break;
   }
+}
+
+function genElement(node, context) {
+  const tag = node.tag;
+  const { push, helper } = context;
+  push(`${helper(CREATE_ELEMENT_BLOCK)}("${tag}")`);
 }
 
 function genExpression(node: any, context: any) {
