@@ -4,6 +4,10 @@ export const isObject = (value) => {
   return value !== null && typeof value === "object";
 };
 
+export const isString = (value) => {
+  return typeof value === "string";
+};
+
 export const hasChanged = (val, newVal) => {
   return !Object.is(val, newVal);
 };

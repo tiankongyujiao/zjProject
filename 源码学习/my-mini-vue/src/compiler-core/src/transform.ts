@@ -10,7 +10,12 @@ export function transform(root: any, options = {}) {
 }
 
 function createRootCodegen(root) {
-  root.codegenNode = root.children[0];
+  const child = root.children[0];
+  if (child.type === NodeTypes.ELEMENT) {
+    root.codegenNode = child.codegenNode;
+  } else {
+    root.codegenNode = root.children[0];
+  }
 }
 // 生成上下文
 function createTransformContext(root, options) {
@@ -27,9 +32,11 @@ function createTransformContext(root, options) {
 // 转换节点
 function traverseNode(node, context) {
   const nodeTransforms = context.nodeTransforms;
+  const exitFns: any = [];
   for (let i = 0; i < nodeTransforms.length; i++) {
     const transform = nodeTransforms[i];
-    transform(node, context);
+    const onExit = transform(node, context);
+    if (onExit) exitFns.push(onExit);
   }
   switch (node.type) {
     case NodeTypes.INTERPOLATION:
@@ -42,6 +49,11 @@ function traverseNode(node, context) {
       break;
     default:
       break;
+  }
+
+  let i = exitFns.length;
+  while (i--) {
+    exitFns[i]();
   }
 }
 // 处理children
