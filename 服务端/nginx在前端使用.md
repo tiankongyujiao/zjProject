@@ -44,8 +44,10 @@ server {
 
         location /hello {
             root D:/download/Nginx/nginx-1.17.1/nginx-1.17.1;
-	    index  index.html index.htm;
-            try_files $uri $uri/ /hello/index.html; // 这里
+	    	index  index.html index.htm; // 设置网站的默认首页
+            try_files $uri $uri/ /hello/index.html; // 解析url，解析不到最后会跳到 /hello/index.html上，
+            // try_files会一次匹配后面的项，比如访问localhost:8083/hello/aa，会先找localhost:8083/hello/aa，
+            // 找不到在找localhost:8083/hello/aa/,最后找到localhost:8083/hello/index.html,防止页面404
         }
 
         error_page   500 502 503 504  /50x.html;
@@ -58,6 +60,11 @@ server {
 > 但是要注意，如果不把vue.config.js的publicPath和创建路由的时候特殊配置base改回来，本地再次npm run serve后的访问地址就要加上/hello路径，如： http://localhost:8080/hello    
 
 以上是history模式配置在nginx子目录下的配置，如果是在根目录，则不需要配置vue.config.js的publicPath和创建路由的时候特殊配置base，nginx的type_files也是不需要的。   
+
+
+
+> 如果在css或者.vue单文件组件中使用public下面的图片，前面要手动加上/hello/。
+
 ### 2. nginx反向代理解决跨域问题
 正向代理代理的是客户端，比如翻墙的时候；反向代理代理的是服务端，反向代理只是一种说法，因为代理客户端被称为正向代理，所以代理服务器被称为反向代理。
 ```
