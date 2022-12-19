@@ -1,4 +1,4 @@
-function toDisplayString(str) {
+function _toDisplayString(str) {
     return String(str);
 }
 
@@ -886,14 +886,14 @@ var runtimeDom = /*#__PURE__*/Object.freeze({
     h: h,
     renderSlots: renderSlots,
     createTextVNode: createTextVNode,
-    createElementVNode: createVnode,
+    _createElementVNode: createVnode,
     getCurrentInstance: getCurrentInstance,
     registerRuntimeCompiler: registerRuntimeCompiler,
     provide: provide,
     inject: inject,
     createRenderer: createRenderer,
     nextTick: nextTick,
-    toDisplayString: toDisplayString,
+    _toDisplayString: _toDisplayString,
     ref: ref,
     proxyRefs: proxyRefs
 });
@@ -1040,7 +1040,7 @@ function generate(ast) {
 function genFunctionPreamble(ast, context) {
     const { push, helper } = context;
     const VueBinging = "Vue";
-    const aliasHelper = (s) => `${helper(s)}: _${helper(s)}`;
+    const aliasHelper = (s) => `${helper(s)}: ${helper(s)}`;
     if (ast.helpers.length > 0) {
         push(`const { ${ast.helpers.map(aliasHelper).join(",")} } = ${VueBinging}`);
         push("\n");
@@ -1265,7 +1265,7 @@ function transformText(node, context) {
 }
 
 function baseCompile(template) {
-    const ast = baseParse("<div>hi, {{message}}</div>");
+    const ast = baseParse(template);
     transform(ast, {
         nodeTransforms: [transformExpression, transformElement, transformText],
     });
@@ -1273,9 +1273,9 @@ function baseCompile(template) {
 }
 
 function compileToFunction(template) {
-    const { code } = baseCompile();
+    const { code } = baseCompile(template);
     return new Function("Vue", code)(runtimeDom);
 }
 registerRuntimeCompiler(compileToFunction);
 
-export { createApp, createElement, createVnode as createElementVNode, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, registerRuntimeCompiler, renderSlots, renderer, toDisplayString };
+export { createVnode as _createElementVNode, _toDisplayString, createApp, createElement, createRenderer, createTextVNode, getCurrentInstance, h, inject, insert, nextTick, patchProp, provide, proxyRefs, ref, registerRuntimeCompiler, renderSlots, renderer };
