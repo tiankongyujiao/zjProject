@@ -21,6 +21,7 @@
 + ejs转义字符
 + 设置黑名单
 + httpOnly cookie（即cookie不能通过document.cookie的方式获取，只能浏览器请求后台时自动带在头部）
++ Referer验证：Referer指的是页面请求来源。意思是，只接受本站的请求，服务器才做响应；如果不是，就拦截。
 
 > xss：跨站脚本攻击、诱骗用户点击恶意链接<u>盗取用户 cookie</u> 进行攻击、不需要用户进行登录、xss 除了利用 cookie 还可以篡改网页等
 >
