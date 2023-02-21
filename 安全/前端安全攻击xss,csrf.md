@@ -21,3 +21,8 @@
 + ejs转义字符
 + 设置黑名单
 + httpOnly cookie（即cookie不能通过document.cookie的方式获取，只能浏览器请求后台时自动带在头部）
+
+> xss：跨站脚本攻击、诱骗用户点击恶意链接<u>盗取用户 cookie</u> 进行攻击、不需要用户进行登录、xss 除了利用 cookie 还可以篡改网页等
+>
+> csrf：跨站请求伪造、<u>无法获取用户的 cookie</u> 而是<u>直接冒充用户、需要用户登录后进行操作</u>
+
